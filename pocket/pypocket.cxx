@@ -1,15 +1,9 @@
 #include <boost/python.hpp>
 #include "pocket_dispatcher.h"
 
-char const* yay()
-{
-	return "Yay!";
-}
-
 BOOST_PYTHON_MODULE(libpocket)
 {
 	using namespace boost::python;
-		def("yay", yay);
 		class_<PocketDispatcher>("PocketDispatcher")
 			.def("Initialize", &PocketDispatcher::Initialize)
 			.def("MakeDir", &PocketDispatcher::MakeDir)
