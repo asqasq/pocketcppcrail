@@ -4,7 +4,9 @@ This branch adds support to compile the C++ client using Boost.python for use by
 
 ```
 sudo apt-get install -y cmake libboost-all-dev python-dev
-cmake .
+mkdir build
+cd build
+cmake ..
 make
 ```
 
