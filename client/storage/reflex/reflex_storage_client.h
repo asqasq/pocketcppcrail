@@ -17,35 +17,30 @@
 * limitations under the License.
 */
 
-#ifndef CRAIL_FILE_H
-#define CRAIL_FILE_H
+#ifndef REFLEX_STORAGE_CLIENT_H
+#define REFLEX_STORAGE_CLIENT_H
 
-#include <memory>
+#include "reflex/reflex_client.h"
+#include "storage/storage_client.h"
 
-#include "common/block_cache.h"
-#include "crail_inputstream.h"
-#include "crail_node.h"
-#include "crail_outputstream.h"
-#include "metadata/file_info.h"
-#include "storage/storage_cache.h"
+const int kReflexBlockSize = 512;
+const short kCmdGet = 0;
+const short kCmdPut = 1;
 
-using namespace std;
-
-class CrailFile : public CrailNode {
+class ReflexStorageClient : public ReflexClient, public StorageClient {
 public:
-  CrailFile(shared_ptr<FileInfo> file_info,
-            shared_ptr<NamenodeClient> namenode_client,
-            shared_ptr<StorageCache> storage_cache,
-            shared_ptr<BlockCache> block_cache);
-  virtual ~CrailFile();
+  ReflexStorageClient();
+  virtual ~ReflexStorageClient();
 
-  unique_ptr<CrailOutputstream> outputstream();
-  unique_ptr<CrailInputstream> inputstream();
+  int Connect(int address, int port) {
+    return ReflexClient::Connect(address, port);
+  }
+  int WriteData(int key, long long address, shared_ptr<ByteBuffer> buf);
+  int ReadData(int key, long long address, shared_ptr<ByteBuffer> buf);
 
 private:
-  shared_ptr<NamenodeClient> namenode_client_;
-  shared_ptr<StorageCache> storage_cache_;
-  shared_ptr<BlockCache> block_cache_;
+  long long linearBlockAddress(long long address, int sectorSize);
+  atomic<unsigned long long> counter_;
 };
 
-#endif /* CRAIL_FILE_H */
+#endif /* REFLEX_STORAGE_CLIENT_H */

@@ -10,6 +10,9 @@ add_library (cppcrail SHARED
 	directory_record.cc
 	common/byte_buffer.cc
 	common/crail_utils.cc
+	common/block_cache.cc
+	reflex/reflex_client.cc
+	reflex/reflex_message.cc
 	narpc/rpc_client.cc
 	namenode/namenode_request.cc
 	namenode/namenode_response.cc
@@ -32,6 +35,7 @@ add_library (cppcrail SHARED
 	storage/narpc/write_response.cc
 	storage/narpc/read_request.cc
 	storage/narpc/read_response.cc
+	storage/reflex/reflex_storage_client.cc
 	metadata/filename.cc
 	metadata/file_info.cc
 	metadata/datanode_info.cc
