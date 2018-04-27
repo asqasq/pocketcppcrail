@@ -17,7 +17,7 @@
 * limitations under the License.
 */
 
-#include "rpc_client.h"
+#include "reflex_client.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -38,15 +38,15 @@
 using namespace std;
 using namespace crail;
 
-RpcClient::RpcClient(bool nodelay) : isConnected(false), buf_(1024) {
+ReflexClient::ReflexClient() : isConnected(false), buf_(1024) {
   this->socket_ = socket(AF_INET, SOCK_STREAM, 0);
+  buf_.set_order(ByteOrder::LittleEndian);
   this->counter_ = 1;
-  this->nodelay_ = nodelay;
 }
 
-RpcClient::~RpcClient() { Close(); }
+ReflexClient::~ReflexClient() { Close(); }
 
-int RpcClient::Connect(int address, int port) {
+int ReflexClient::Connect(int address, int port) {
   if (isConnected) {
     return 0;
   }
@@ -54,10 +54,7 @@ int RpcClient::Connect(int address, int port) {
   this->address_ = address;
   this->port_ = port;
 
-  int yes = 0;
-  if (nodelay_) {
-    yes = 1;
-  }
+  int yes = 1;
   setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, (char *)&yes, sizeof(int));
 
   struct sockaddr_in addr_;
@@ -74,7 +71,7 @@ int RpcClient::Connect(int address, int port) {
   return 0;
 }
 
-int RpcClient::Close() {
+int ReflexClient::Close() {
   if (isConnected) {
     close(socket_);
     isConnected = false;
@@ -82,7 +79,7 @@ int RpcClient::Close() {
   return 0;
 }
 
-void RpcClient::Debug(int address, int port) {
+void ReflexClient::Debug(int address, int port) {
   cout << "connecting to ";
   int tmp = address;
   unsigned char *_tmp = (unsigned char *)&tmp;
@@ -93,61 +90,79 @@ void RpcClient::Debug(int address, int port) {
   cout << ", port " << port << endl;
 }
 
-int RpcClient::IssueRequest(RpcMessage &request,
-                            shared_ptr<RpcMessage> response) {
-  unsigned long long ticket = counter_++;
-  responseMap.insert({ticket, response});
-  buf_.Clear();
+shared_ptr<ReflexFuture> ReflexClient::Put(long long lba,
+                                           shared_ptr<ByteBuffer> payload) {
+  return IssueOperation(kCmdPut, lba, payload);
+}
 
-  // narpc header (size, ticket)
-  AddNaRPCHeader(buf_, request.Size(), ticket);
+shared_ptr<ReflexFuture> ReflexClient::Get(long long lba,
+                                           shared_ptr<ByteBuffer> payload) {
+  return IssueOperation(kCmdGet, lba, payload);
+}
+
+shared_ptr<ReflexFuture>
+ReflexClient::IssueOperation(int type, long long lba,
+                             shared_ptr<ByteBuffer> payload) {
+  if (lba % kReflexBlockSize != 0) {
+    return nullptr;
+  }
+
+  int remaining = payload->remaining();
+  long long count = remaining / kReflexBlockSize;
+  if (payload->remaining() % kReflexBlockSize != 0) {
+    count++;
+    remaining = count * kReflexBlockSize;
+  }
+
+  if (remaining > payload->size() - payload->position()) {
+    return nullptr;
+  }
+
+  /*
+cout << "reflexclient, issueOperation, type " << type << ", lba " << lba
+ << ", buffer.rem " << payload->remaining() << ", remaining " << remaining
+ << ", count " << count << endl;
+  */
+
+  unsigned long long ticket = counter_++;
+  ReflexHeader request(type, ticket, lba, count);
+
   // create file request
+  buf_.Clear();
   request.Write(buf_);
 
-  // issue request
+  // send header
   buf_.Flip();
   if (SendBytes(buf_.get_bytes(), buf_.remaining()) < 0) {
-    return -1;
+    return nullptr;
   }
-
-  shared_ptr<ByteBuffer> payload = request.Payload();
-  if (payload) {
-    if (SendBytes(payload->get_bytes(), payload->remaining()) < 0) {
-      return -1;
+  if (type == kCmdPut) {
+    if (SendBytes(payload->get_bytes(), remaining) < 0) {
+      return nullptr;
     }
   }
-  return 0;
+
+  shared_ptr<ReflexFuture> future = make_shared<ReflexFuture>(ticket, payload);
+  responseMap.insert({ticket, future});
+  return future;
 }
 
-int RpcClient::PollResponse() {
+int ReflexClient::PollResponse() {
   // recv resp header
   buf_.Clear();
-  if (RecvBytes(buf_.get_bytes(), kNarpcHeader) < 0) {
+  if (RecvBytes(buf_.get_bytes(), header_.Size()) < 0) {
     return -1;
   }
-  int size = buf_.GetInt();
-  long long ticket = buf_.GetLong();
+  header_.Update(buf_);
+  long long ticket = header_.ticket();
 
-  shared_ptr<RpcMessage> response = responseMap[ticket];
+  shared_ptr<ReflexFuture> future = responseMap[ticket];
   responseMap.erase(ticket);
 
-  shared_ptr<ByteBuffer> payload = response->Payload();
-  int payload_size = 0;
-  if (payload) {
-    payload_size = payload->remaining();
-  }
-
-  // recv resp obj
-  buf_.Clear();
-  int header_size = size - payload_size;
-  if (RecvBytes(buf_.get_bytes(), header_size) < 0) {
-    return -1;
-  }
-
-  response->Update(buf_);
-
-  if (payload) {
-    if (RecvBytes(payload->get_bytes(), payload->remaining()) < 0) {
+  if (header_.type() == kCmdGet) {
+    shared_ptr<ByteBuffer> payload = future->buffer();
+    int remaining = header_.count() * kReflexBlockSize;
+    if (RecvBytes(payload->get_bytes(), remaining) < 0) {
       return -1;
     }
   }
@@ -155,19 +170,7 @@ int RpcClient::PollResponse() {
   return 0;
 }
 
-void RpcClient::AddNaRPCHeader(ByteBuffer &buf, int size,
-                               unsigned long long ticket) {
-  buf.PutInt(size);
-  buf.PutLong(ticket);
-}
-
-long long RpcClient::RemoveNaRPCHeader(ByteBuffer &buf) {
-  buf.GetInt();
-  long long ticket = buf.GetLong();
-  return ticket;
-}
-
-int RpcClient::SendBytes(unsigned char *buf, int size) {
+int ReflexClient::SendBytes(unsigned char *buf, int size) {
   int res = send(socket_, buf, (size_t)size, (int)0);
   if (res < 0) {
     return res;
@@ -184,7 +187,7 @@ int RpcClient::SendBytes(unsigned char *buf, int size) {
   return remaining;
 }
 
-int RpcClient::RecvBytes(unsigned char *buf, int size) {
+int ReflexClient::RecvBytes(unsigned char *buf, int size) {
   int res = recv(socket_, buf, (size_t)size, (int)0);
   if (res < 0) {
     return res;

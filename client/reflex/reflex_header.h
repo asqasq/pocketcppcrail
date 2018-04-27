@@ -17,39 +17,46 @@
 * limitations under the License.
 */
 
-#ifndef CRAIL_OUTPUTSTREAM_H
-#define CRAIL_OUTPUTSTREAM_H
+#ifndef REFLEX_HEADER_H
+#define REFLEX_HEADER_H
 
 #include <memory>
 
-#include "common/block_cache.h"
 #include "common/byte_buffer.h"
-#include "namenode/namenode_client.h"
-#include "storage/storage_cache.h"
+#include "common/serializable.h"
 
-using namespace crail;
 using namespace std;
 
-class CrailOutputstream {
+class ReflexHeader : public Serializable {
 public:
-  CrailOutputstream(shared_ptr<NamenodeClient> namenode_client,
-                    shared_ptr<StorageCache> storage_cache,
-                    shared_ptr<BlockCache> block_cache,
-                    shared_ptr<FileInfo> file_info, int position);
-  virtual ~CrailOutputstream();
+  ReflexHeader(short type, long long ticket, long long lba, int count);
+  ReflexHeader(short type, long long ticket, long long lba, int count,
+               shared_ptr<ByteBuffer> payload);
+  ReflexHeader();
+  ~ReflexHeader();
 
-  int Write(shared_ptr<ByteBuffer> buf);
-  int Close();
+  int Write(ByteBuffer &buf) const;
+  int Update(ByteBuffer &buf);
+  int Size() const {
+    return sizeof(magic_) + sizeof(type_) + sizeof(ticket_) + sizeof(lba_) +
+           sizeof(count_);
+  };
 
-  int position() const { return position_; }
-  int capacity() const { return file_info_->capacity(); }
+  short magic() const { return magic_; }
+  short type() const { return type_; }
+  long long ticket() const { return ticket_; }
+  int count() const { return count_; }
+
+  shared_ptr<ByteBuffer> Payload() { return payload_; };
 
 private:
-  shared_ptr<FileInfo> file_info_;
-  shared_ptr<NamenodeClient> namenode_client_;
-  shared_ptr<StorageCache> storage_cache_;
-  shared_ptr<BlockCache> block_cache_;
-  int position_;
+  short magic_;
+  short type_;
+  long long ticket_;
+  long long lba_;
+  int count_;
+
+  shared_ptr<ByteBuffer> payload_;
 };
 
-#endif /* CRAIL_OUTPUTSTREAM_H */
+#endif /* REFLEX_HEADER_H */

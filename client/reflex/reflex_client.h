@@ -17,8 +17,8 @@
 * limitations under the License.
 */
 
-#ifndef RPC_CLIENT_H
-#define RPC_CLIENT_H
+#ifndef REFLEX_CLIENT_H
+#define REFLEX_CLIENT_H
 
 #include <atomic>
 #include <atomic>
@@ -36,42 +36,48 @@
 
 #include "common/byte_buffer.h"
 #include "common/serializable.h"
-#include "rpc_message.h"
+#include "reflex_future.h"
+#include "reflex_header.h"
 
 using namespace std;
 using namespace crail;
 
 namespace crail {
 
-class RpcClient {
+const int kReflexBlockSize = 512;
+const short kCmdGet = 0;
+const short kCmdPut = 1;
+
+class ReflexClient {
 public:
-  RpcClient(bool nodelay);
-  virtual ~RpcClient();
+  ReflexClient();
+  virtual ~ReflexClient();
 
   const int kNarpcHeader = 12;
   const int kRpcHeader = 4;
 
   int Connect(int address, int port);
-  int IssueRequest(RpcMessage &request, shared_ptr<RpcMessage> response);
+  shared_ptr<ReflexFuture> Put(long long lba, shared_ptr<ByteBuffer> payload);
+  shared_ptr<ReflexFuture> Get(long long lba, shared_ptr<ByteBuffer> payload);
   int PollResponse();
   int Close();
 
 private:
+  shared_ptr<ReflexFuture> IssueOperation(int type, long long lba,
+                                          shared_ptr<ByteBuffer> payload);
   int SendBytes(unsigned char *buf, int size);
   int RecvBytes(unsigned char *buf, int size);
-  void AddNaRPCHeader(ByteBuffer &buf, int size, unsigned long long ticket);
-  long long RemoveNaRPCHeader(ByteBuffer &buf);
   void Debug(int address, int port);
 
   int socket_;
-  atomic<unsigned long long> counter_;
-  unordered_map<long long, shared_ptr<RpcMessage>> responseMap;
+  unordered_map<long long, shared_ptr<ReflexFuture>> responseMap;
   bool isConnected;
   ByteBuffer buf_;
-  bool nodelay_;
-  int address_;
+  ReflexHeader header_;
+  atomic<unsigned long long> counter_;
   int port_;
+  int address_;
 };
 }
 
-#endif /* RPC_CLIENT_H */
+#endif /* REFLEX_CLIENT_H */

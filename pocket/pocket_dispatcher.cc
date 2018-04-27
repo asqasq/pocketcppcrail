@@ -17,7 +17,8 @@ int PocketDispatcher::Initialize(string address, int port) {
 }
 
 int PocketDispatcher::MakeDir(string name) {
-  unique_ptr<CrailNode> crail_node = crail_.Create(name, FileType::Directory);
+  unique_ptr<CrailNode> crail_node =
+      crail_.Create(name, FileType::Directory, 0, 0, true);
   if (!crail_node) {
     cout << "create node failed " << endl;
     return -1;
@@ -51,14 +52,16 @@ int PocketDispatcher::Enumerate(string name) {
   return 0;
 }
 
-int PocketDispatcher::PutFile(string local_file, string dst_file) {
+int PocketDispatcher::PutFile(string local_file, string dst_file,
+                              bool enumerable) {
   FILE *fp = fopen(local_file.c_str(), "r");
   if (!fp) {
     cout << "could not open local file " << local_file.c_str() << endl;
     return -1;
   }
 
-  unique_ptr<CrailNode> crail_node = crail_.Create(dst_file, FileType::File);
+  unique_ptr<CrailNode> crail_node =
+      crail_.Create(dst_file, FileType::File, 0, 0, enumerable);
   if (!crail_node) {
     cout << "create node failed" << endl;
     return -1;
@@ -74,13 +77,25 @@ int PocketDispatcher::PutFile(string local_file, string dst_file) {
 
   shared_ptr<ByteBuffer> buf = make_shared<ByteBuffer>(kBufferSize);
   while (size_t len = fread(buf->get_bytes(), 1, buf->remaining(), fp)) {
-    buf->set_position(len);
+    buf->set_position(buf->position() + len);
+    if (buf->remaining() > 0) {
+      continue;
+    }
+
     buf->Flip();
     while (buf->remaining() > 0) {
       outputstream->Write(buf);
     }
     buf->Clear();
   }
+
+  if (buf->position() > 0) {
+    buf->Flip();
+    while (buf->remaining() > 0) {
+      outputstream->Write(buf);
+    }
+  }
+
   fclose(fp);
   outputstream->Close();
 

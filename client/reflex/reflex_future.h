@@ -17,35 +17,28 @@
 * limitations under the License.
 */
 
-#ifndef CRAIL_FILE_H
-#define CRAIL_FILE_H
+#ifndef REFLEX_FUTURE_H
+#define REFLEX_FUTURE_H
 
+#include "common/byte_buffer.h"
 #include <memory>
 
-#include "common/block_cache.h"
-#include "crail_inputstream.h"
-#include "crail_node.h"
-#include "crail_outputstream.h"
-#include "metadata/file_info.h"
-#include "storage/storage_cache.h"
-
 using namespace std;
+using namespace crail;
 
-class CrailFile : public CrailNode {
+class ReflexFuture {
 public:
-  CrailFile(shared_ptr<FileInfo> file_info,
-            shared_ptr<NamenodeClient> namenode_client,
-            shared_ptr<StorageCache> storage_cache,
-            shared_ptr<BlockCache> block_cache);
-  virtual ~CrailFile();
+  ReflexFuture(long long ticket, shared_ptr<ByteBuffer> buffer);
+  virtual ~ReflexFuture();
 
-  unique_ptr<CrailOutputstream> outputstream();
-  unique_ptr<CrailInputstream> inputstream();
+  long long ticket() const { return ticket_; }
+  bool is_done() const { return done_; }
+  shared_ptr<ByteBuffer> buffer() { return buffer_; }
 
 private:
-  shared_ptr<NamenodeClient> namenode_client_;
-  shared_ptr<StorageCache> storage_cache_;
-  shared_ptr<BlockCache> block_cache_;
+  shared_ptr<ByteBuffer> buffer_;
+  long long ticket_;
+  bool done_;
 };
 
-#endif /* CRAIL_FILE_H */
+#endif /* REFLEX_FUTURE_H */
