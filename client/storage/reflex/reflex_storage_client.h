@@ -23,10 +23,6 @@
 #include "reflex/reflex_client.h"
 #include "storage/storage_client.h"
 
-const int kReflexBlockSize = 512;
-const short kCmdGet = 0;
-const short kCmdPut = 1;
-
 class ReflexStorageClient : public ReflexClient, public StorageClient {
 public:
   ReflexStorageClient();
@@ -35,12 +31,12 @@ public:
   int Connect(int address, int port) {
     return ReflexClient::Connect(address, port);
   }
+  int Close() { return ReflexClient::Close(); }
   int WriteData(int key, long long address, shared_ptr<ByteBuffer> buf);
   int ReadData(int key, long long address, shared_ptr<ByteBuffer> buf);
 
 private:
-  long long linearBlockAddress(long long address, int sectorSize);
-  atomic<unsigned long long> counter_;
+  long long linearBlockAddress(long long address, int sector_size);
 };
 
 #endif /* REFLEX_STORAGE_CLIENT_H */

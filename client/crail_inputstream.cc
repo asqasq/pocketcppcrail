@@ -43,6 +43,7 @@ int CrailInputstream::Read(shared_ptr<ByteBuffer> buf) {
     shared_ptr<GetblockResponse> get_block_res = namenode_client_->GetBlock(
         file_info_->fd(), file_info_->token(), position_, 0);
     block_info = get_block_res->block_info();
+    block_cache_->PutBlock(position_, block_info);
   }
 
   int address = block_info->datanode()->addr();
@@ -56,7 +57,6 @@ int CrailInputstream::Read(shared_ptr<ByteBuffer> buf) {
 
   long long block_addr = block_info->addr() + block_offset;
   storage_client->ReadData(block_info->lkey(), block_addr, buf);
-  storage_cache_->Put(block_info->datanode()->Key(), storage_client);
 
   int len = buf->remaining();
   this->position_ += buf->remaining();

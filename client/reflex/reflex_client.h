@@ -36,14 +36,17 @@
 
 #include "common/byte_buffer.h"
 #include "common/serializable.h"
-#include "reflex_message.h"
+#include "reflex_future.h"
+#include "reflex_header.h"
 
 using namespace std;
 using namespace crail;
 
 namespace crail {
 
-const int kReflexSectorSize = 512;
+const int kReflexBlockSize = 512;
+const short kCmdGet = 0;
+const short kCmdPut = 1;
 
 class ReflexClient {
 public:
@@ -54,19 +57,26 @@ public:
   const int kRpcHeader = 4;
 
   int Connect(int address, int port);
-  int IssueRequest(ReflexMessage &request, shared_ptr<ReflexMessage> response);
+  shared_ptr<ReflexFuture> Put(long long lba, shared_ptr<ByteBuffer> payload);
+  shared_ptr<ReflexFuture> Get(long long lba, shared_ptr<ByteBuffer> payload);
   int PollResponse();
   int Close();
 
 private:
+  shared_ptr<ReflexFuture> IssueOperation(int type, long long lba,
+                                          shared_ptr<ByteBuffer> payload);
   int SendBytes(unsigned char *buf, int size);
   int RecvBytes(unsigned char *buf, int size);
   void Debug(int address, int port);
 
   int socket_;
-  unordered_map<long long, shared_ptr<ReflexMessage>> responseMap;
+  unordered_map<long long, shared_ptr<ReflexFuture>> responseMap;
   bool isConnected;
   ByteBuffer buf_;
+  ReflexHeader header_;
+  atomic<unsigned long long> counter_;
+  int port_;
+  int address_;
 };
 }
 
