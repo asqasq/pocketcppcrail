@@ -17,43 +17,35 @@
 * limitations under the License.
 */
 
-#ifndef NAMENODE_REQUEST_H
-#define NAMENODE_REQUEST_H
+#ifndef IOCTL_REQUEST_H
+#define IOCTL_REQUEST_H
 
 #include "common/byte_buffer.h"
 #include "common/serializable.h"
+#include "metadata/filename.h"
+#include "namenode_request.h"
+#include "narpc/rpc_message.h"
 
 using namespace crail;
 
-enum class RpcCommand : short {
-  Create = 1,
-  Lookup = 2,
-  Setfile = 3,
-  Removefile = 4,
-  Getblock = 6,
-  Ioctl = 13,
-};
-enum class RequestType : short {
-  Create = 1,
-  Lookup = 2,
-  Setfile = 3,
-  Removefile = 4,
-  Getblock = 6,
-  Ioctl = 13
-};
-
-class NamenodeRequest : public Serializable {
+class IoctlRequest : public NamenodeRequest, public RpcMessage {
 public:
-  NamenodeRequest(short cmd, short type);
-  virtual ~NamenodeRequest();
+  IoctlRequest(unsigned char op, Filename &name);
+  virtual ~IoctlRequest();
 
+  shared_ptr<ByteBuffer> Payload() { return nullptr; }
+
+  int Size() const {
+    return NamenodeRequest::Size() + sizeof(op_) + filename_.Size();
+  }
   int Write(ByteBuffer &buf) const;
   int Update(ByteBuffer &buf);
-  int Size() const { return sizeof(short) * 2; }
+
+  const Filename &filename() const { return filename_; }
 
 private:
-  short cmd_;
-  short type_;
+  unsigned char op_;
+  Filename filename_;
 };
 
-#endif /* NAMENODE_REQUEST_H */
+#endif /* IOCTL_REQUEST_H */

@@ -17,43 +17,35 @@
 * limitations under the License.
 */
 
-#ifndef NAMENODE_REQUEST_H
-#define NAMENODE_REQUEST_H
+#ifndef IOCTL_RESPONSE_H
+#define IOCTL_RESPONSE_H
 
-#include "common/byte_buffer.h"
 #include "common/serializable.h"
+#include "metadata/block_info.h"
+#include "metadata/file_info.h"
+#include "namenode_response.h"
+#include "narpc/rpc_message.h"
 
 using namespace crail;
 
-enum class RpcCommand : short {
-  Create = 1,
-  Lookup = 2,
-  Setfile = 3,
-  Removefile = 4,
-  Getblock = 6,
-  Ioctl = 13,
-};
-enum class RequestType : short {
-  Create = 1,
-  Lookup = 2,
-  Setfile = 3,
-  Removefile = 4,
-  Getblock = 6,
-  Ioctl = 13
-};
-
-class NamenodeRequest : public Serializable {
+class IoctlResponse : public NamenodeResponse, public RpcMessage {
 public:
-  NamenodeRequest(short cmd, short type);
-  virtual ~NamenodeRequest();
+  IoctlResponse();
+  virtual ~IoctlResponse();
 
+  shared_ptr<ByteBuffer> Payload() { return nullptr; }
+
+  int Size() const {
+    return NamenodeResponse::Size() + sizeof(op_) + sizeof(long long);
+  }
   int Write(ByteBuffer &buf) const;
   int Update(ByteBuffer &buf);
-  int Size() const { return sizeof(short) * 2; }
+
+  long long count() const { return count_; }
 
 private:
-  short cmd_;
-  short type_;
+  unsigned char op_;
+  long long count_;
 };
 
-#endif /* NAMENODE_REQUEST_H */
+#endif /* IOCTL_RESPONSE_H */
