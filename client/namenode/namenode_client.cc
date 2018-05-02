@@ -16,10 +16,10 @@
 #include "create_response.h"
 #include "getblock_request.h"
 #include "getblock_response.h"
+#include "ioctl_request.h"
 #include "lookup_request.h"
 #include "remove_request.h"
 #include "setfile_request.h"
-#include "void_response.h"
 
 NamenodeClient::NamenodeClient() : RpcClient(true) { this->counter_ = 1; }
 
@@ -32,18 +32,24 @@ shared_ptr<CreateResponse> NamenodeClient::Create(Filename &name, int type,
   Createrequest createReq(name, type, storage_class, location_class,
                           enumerable);
   shared_ptr<CreateResponse> getblockRes = make_shared<CreateResponse>();
-  RpcClient::IssueRequest(createReq, getblockRes);
-  while (RpcClient::PollResponse() < 0)
-    ;
+  if (RpcClient::IssueRequest(createReq, getblockRes) < 0) {
+    return nullptr;
+  }
+  if (RpcClient::PollResponse() < 0) {
+    return nullptr;
+  }
   return getblockRes;
 }
 
 shared_ptr<LookupResponse> NamenodeClient::Lookup(Filename &name) {
   LookupRequest lookupReq(name);
   shared_ptr<LookupResponse> lookupRes = make_shared<LookupResponse>();
-  RpcClient::IssueRequest(lookupReq, lookupRes);
-  while (RpcClient::PollResponse() < 0)
-    ;
+  if (RpcClient::IssueRequest(lookupReq, lookupRes) < 0) {
+    return nullptr;
+  }
+  if (RpcClient::PollResponse() < 0) {
+    return nullptr;
+  }
   return lookupRes;
 }
 
@@ -51,30 +57,52 @@ shared_ptr<GetblockResponse> NamenodeClient::GetBlock(long long fd,
                                                       long long token,
                                                       long long position,
                                                       long long capacity) {
-  GetblockRequest getblockReq(fd, token, position, capacity);
-  shared_ptr<GetblockResponse> getblockRes = make_shared<GetblockResponse>();
-  RpcClient::IssueRequest(getblockReq, getblockRes);
-  while (RpcClient::PollResponse() < 0)
-    ;
-  return getblockRes;
+  GetblockRequest get_block_req(fd, token, position, capacity);
+  shared_ptr<GetblockResponse> get_block_res = make_shared<GetblockResponse>();
+  if (RpcClient::IssueRequest(get_block_req, get_block_res) < 0) {
+    return nullptr;
+  }
+  if (RpcClient::PollResponse() < 0) {
+    return nullptr;
+  }
+  return get_block_res;
 }
 
 shared_ptr<VoidResponse> NamenodeClient::SetFile(shared_ptr<FileInfo> file_info,
                                                  bool close) {
-  SetfileRequest setfileReq(file_info, close);
-  shared_ptr<VoidResponse> setfileRes = make_shared<VoidResponse>();
-  RpcClient::IssueRequest(setfileReq, setfileRes);
-  while (RpcClient::PollResponse() < 0)
-    ;
-  return setfileRes;
+  SetfileRequest set_file_req(file_info, close);
+  shared_ptr<VoidResponse> set_file_res = make_shared<VoidResponse>();
+  if (RpcClient::IssueRequest(set_file_req, set_file_res) < 0) {
+    return nullptr;
+  }
+  if (RpcClient::PollResponse() < 0) {
+    return nullptr;
+  }
+  return set_file_res;
 }
 
 shared_ptr<RemoveResponse> NamenodeClient::Remove(Filename &name,
                                                   bool recursive) {
-  RemoveRequest removeReq(name, recursive);
-  shared_ptr<RemoveResponse> removeRes = make_shared<RemoveResponse>();
-  RpcClient::IssueRequest(removeReq, removeRes);
-  while (RpcClient::PollResponse() < 0)
-    ;
-  return removeRes;
+  RemoveRequest remove_req(name, recursive);
+  shared_ptr<RemoveResponse> remove_res = make_shared<RemoveResponse>();
+  if (RpcClient::IssueRequest(remove_req, remove_res) < 0) {
+    return nullptr;
+  }
+  if (RpcClient::PollResponse() < 0) {
+    return nullptr;
+  }
+  return remove_res;
+}
+
+shared_ptr<IoctlResponse> NamenodeClient::Ioctl(unsigned char op,
+                                                Filename &name) {
+  IoctlRequest ioctl_request(op, name);
+  shared_ptr<IoctlResponse> ioctl_response = make_shared<IoctlResponse>();
+  if (RpcClient::IssueRequest(ioctl_request, ioctl_response) < 0) {
+    return nullptr;
+  }
+  if (RpcClient::PollResponse() < 0) {
+    return nullptr;
+  }
+  return ioctl_response;
 }

@@ -1,6 +1,7 @@
 #include "pocket_dispatcher.h"
 
 #include <iostream>
+#include <string.h>
 
 #include "crail_directory.h"
 #include "crail_file.h"
@@ -20,7 +21,7 @@ int PocketDispatcher::MakeDir(string name) {
   unique_ptr<CrailNode> crail_node =
       crail_.Create(name, FileType::Directory, 0, 0, true);
   if (!crail_node) {
-    cout << "create node failed " << endl;
+    cout << "makedir failed " << endl;
     return -1;
   }
   return 0;
@@ -107,19 +108,19 @@ int PocketDispatcher::PutFile(string local_file, string dst_file,
 }
 
 int PocketDispatcher::GetFile(string src_file, string local_file) {
-  FILE *fp = fopen(local_file.c_str(), "w");
-  if (!fp) {
-    cout << "could not open local file " << local_file.c_str() << endl;
-    return -1;
-  }
-
   unique_ptr<CrailNode> crail_node = crail_.Lookup(src_file);
   if (!crail_node) {
-    cout << "create node failed" << endl;
+    cout << "lookup node failed" << endl;
     return -1;
   }
   if (crail_node->type() != static_cast<int>(FileType::File)) {
     cout << "node is not a file" << endl;
+    return -1;
+  }
+
+  FILE *fp = fopen(local_file.c_str(), "w");
+  if (!fp) {
+    cout << "could not open local file " << local_file.c_str() << endl;
     return -1;
   }
 
@@ -146,11 +147,73 @@ int PocketDispatcher::GetFile(string src_file, string local_file) {
 }
 
 int PocketDispatcher::DeleteDir(string directory) {
-  crail_.Remove(directory, true);
-  return 0;
+  return crail_.Remove(directory, true);
 }
 
 int PocketDispatcher::DeleteFile(string file) {
-  crail_.Remove(file, false);
+  return crail_.Remove(file, false);
+}
+
+int PocketDispatcher::CountFiles(string directory) {
+  int op = 5;
+  return crail_.Ioctl((unsigned char)op, directory);
+}
+
+int PocketDispatcher::PutBuffer(const char data[], int len, string dst_file,
+                                bool enumerable) {
+  unique_ptr<CrailNode> crail_node =
+      crail_.Create(dst_file, FileType::File, 0, 0, enumerable);
+  if (!crail_node) {
+    cout << "create node failed" << endl;
+    return -1;
+  }
+  if (crail_node->type() != static_cast<int>(FileType::File)) {
+    cout << "node is not a file" << endl;
+    return -1;
+  }
+
+  CrailNode *node = crail_node.get();
+  CrailFile *file = static_cast<CrailFile *>(node);
+  unique_ptr<CrailOutputstream> outputstream = file->outputstream();
+
+  shared_ptr<ByteBuffer> buf = make_shared<ByteBuffer>(len);
+  buf->PutBytes(data, len);
+  buf->Flip();
+  while (buf->remaining() > 0) {
+    if (outputstream->Write(buf) < 0) {
+      return -1;
+    }
+  }
+  outputstream->Close();
+
+  return 0;
+}
+
+int PocketDispatcher::GetBuffer(char data[], int len, string src_file) {
+  unique_ptr<CrailNode> crail_node = crail_.Lookup(src_file);
+  if (!crail_node) {
+    cout << "lookup node failed" << endl;
+    return -1;
+  }
+  if (crail_node->type() != static_cast<int>(FileType::File)) {
+    cout << "node is not a file" << endl;
+    return -1;
+  }
+
+  CrailNode *node = crail_node.get();
+  CrailFile *file = static_cast<CrailFile *>(node);
+  unique_ptr<CrailInputstream> inputstream = file->inputstream();
+
+  shared_ptr<ByteBuffer> buf = make_shared<ByteBuffer>(len);
+  while (buf->remaining()) {
+    if (inputstream->Read(buf) < 0) {
+      return -1;
+    }
+  }
+  buf->Clear();
+  memcpy(data, buf->get_bytes(), len);
+
+  inputstream->Close();
+
   return 0;
 }

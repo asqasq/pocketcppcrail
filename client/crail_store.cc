@@ -58,6 +58,13 @@ unique_ptr<CrailNode> CrailStore::Create(string &name, FileType type,
   auto create_res =
       namenode_client_->Create(filename, static_cast<int>(type), storage_class,
                                location_class, _enumerable);
+  if (!create_res) {
+    return nullptr;
+  }
+  if (create_res->error() != 0) {
+    return nullptr;
+  }
+
   auto file_info = create_res->file();
   auto parent_info = create_res->parent();
   long long dir_offset = file_info->dir_offset();
@@ -70,6 +77,12 @@ unique_ptr<CrailNode> CrailStore::Create(string &name, FileType type,
 unique_ptr<CrailNode> CrailStore::Lookup(string &name) {
   Filename filename(name);
   auto lookup_res = namenode_client_->Lookup(filename);
+  if (!lookup_res) {
+    return nullptr;
+  }
+  if (lookup_res->error() != 0) {
+    return nullptr;
+  }
 
   auto file_info = lookup_res->file();
   AddBlock(file_info->fd(), 0, lookup_res->file_block());
@@ -79,6 +92,13 @@ unique_ptr<CrailNode> CrailStore::Lookup(string &name) {
 int CrailStore::Remove(string &name, bool recursive) {
   Filename filename(name);
   auto remove_res = namenode_client_->Remove(filename, recursive);
+  if (!remove_res) {
+    return -1;
+  }
+  if (remove_res->error() != 0) {
+    return -1;
+  }
+
   auto parent_info = remove_res->parent();
   long long dir_offset = remove_res->file()->dir_offset();
   string _name = filename.name();
@@ -140,4 +160,16 @@ int CrailStore::WriteDirectoryRecord(shared_ptr<FileInfo> parent_info,
   buf->Flip();
   directory_stream->Write(buf);
   return 0;
+}
+
+int CrailStore::Ioctl(unsigned char op, string &name) {
+  Filename filename(name);
+  shared_ptr<IoctlResponse> ioctl_res = namenode_client_->Ioctl(op, filename);
+  if (!ioctl_res) {
+    return -1;
+  }
+  if (ioctl_res->error() != 0) {
+    return -1;
+  }
+  return ioctl_res->count();
 }
