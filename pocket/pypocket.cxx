@@ -13,6 +13,8 @@ BOOST_PYTHON_MODULE(libpocket)
 			.def("GetFile", &PocketDispatcher::GetFile)
 			.def("DeleteFile", &PocketDispatcher::DeleteFile)
 			.def("DeleteDir", &PocketDispatcher::DeleteDir)
+			.def("PutBuffer", &PocketDispatcher::PutBuffer)
+			.def("GetBuffer", &PocketDispatcher::GetBuffer)
 		;
 
 	
