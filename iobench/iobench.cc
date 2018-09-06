@@ -42,7 +42,7 @@ enum class Operation {
   GetKey = 7,
   PutBenchmark = 8,
   GetBenchmark = 9,
-  LookupBenchmark = 9
+  LookupBenchmark = 10
 };
 
 struct Settings {
