@@ -42,7 +42,6 @@ enum class Operation {
   GetKey = 7,
   PutBenchmark = 8,
   GetBenchmark = 9,
-  LookupBenchmark = 10
 };
 
 struct Settings {
@@ -75,8 +74,6 @@ Operation getOperation(string name) {
     return Operation::PutBenchmark;
   } else if (name == "GetBenchmark") {
     return Operation::GetBenchmark;
-  } else if (name == "LookupBenchmark") {
-    return Operation::LookupBenchmark;
   } else {
     return Operation::Undefined;
   }
@@ -337,15 +334,6 @@ int Iobench::PutKey(const char data[], int len, string dst_file,
   return 0;
 }
 
-int Iobench::Lookup(string src_file) {
-  unique_ptr<CrailNode> crail_node = crail_.Lookup(src_file);
-  if (!crail_node) {
-    cout << "lookup node failed" << endl;
-    return -1;
-  }
-  return 0;
-}
-
 int Iobench::GetKey(char data[], int len, string src_file) {
   unique_ptr<CrailNode> crail_node = crail_.Lookup(src_file);
   if (!crail_node) {
@@ -430,8 +418,7 @@ int main(int argc, char *argv[]) {
     char data[settings.size];
     iobench.GetKey(data, settings.size, settings.filename);
   } else if (settings.operation == Operation::PutBenchmark ||
-             settings.operation == Operation::GetBenchmark ||
-             settings.operation == Operation::LookupBenchmark) {
+             settings.operation == Operation::GetBenchmark) {
     vector<string> names;
     for (int i = 0; i < settings.loop; i++) {
       string tmp = settings.filename;
@@ -447,8 +434,6 @@ int main(int argc, char *argv[]) {
         res = iobench.PutKey(data, settings.size, n, settings.enumerable);
       } else if (settings.operation == Operation::GetBenchmark) {
         res = iobench.GetKey(data, settings.size, n);
-      } else if (settings.operation == Operation::LookupBenchmark) {
-        res = iobench.Lookup(n);
       } else {
         cout << "No valid operation defined " << endl;
         break;

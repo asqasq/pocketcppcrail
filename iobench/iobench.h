@@ -38,7 +38,6 @@ public:
   int Read(string src_file, int len, int loop);
   int PutKey(const char data[], int len, string dst_file, bool enumerable);
   int GetKey(char data[], int len, string src_file);
-  int Lookup(string src_file);
 
 private:
   CrailStore crail_;
