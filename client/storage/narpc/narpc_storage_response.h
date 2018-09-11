@@ -1,4 +1,8 @@
 /*
+ * CppCrail: Native Crail
+ *
+ * Author: Patrick Stuedi  <stu@zurich.ibm.com>
+ *
  * Copyright (C) 2015-2018, IBM Corporation
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,11 +27,10 @@
 #include "common/byte_buffer.h"
 #include "narpc/rpc_checker.h"
 #include "narpc/rpc_response.h"
-#include "storage/storage_response.h"
 
 using namespace crail;
 
-class NarpcStorageResponse : public RpcResponse, public StorageResponse {
+class NarpcStorageResponse : public RpcResponse {
 public:
   NarpcStorageResponse(RpcChecker *rpc_checker, int error, int type);
   virtual ~NarpcStorageResponse();

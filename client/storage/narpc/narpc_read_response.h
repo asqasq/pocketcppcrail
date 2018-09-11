@@ -1,4 +1,8 @@
 /*
+ * CppCrail: Native Crail
+ *
+ * Author: Patrick Stuedi  <stu@zurich.ibm.com>
+ *
  * Copyright (C) 2015-2018, IBM Corporation
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +30,6 @@
 #include "narpc/rpc_message.h"
 #include "narpc/rpc_response.h"
 #include "narpc_storage_response.h"
-#include "storage/storage_response.h"
 
 using namespace std;
 

@@ -1,4 +1,8 @@
 /*
+ * CppCrail: Native Crail
+ *
+ * Author: Patrick Stuedi  <stu@zurich.ibm.com>
+ *
  * Copyright (C) 2015-2018, IBM Corporation
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,12 +21,14 @@
  * limitations under the License.
  */
 
-#ifndef STORAGE_RESPONSE_H
-#define STORAGE_RESPONSE_H
+#ifndef REFLEX_CHECKER_H
+#define REFLEX_CHECKER_H
 
-class StorageResponse {
+class ReflexChecker {
 public:
-  virtual int Get() = 0;
+  virtual int PollResponse() = 0;
+
+private:
 };
 
-#endif /* STORAGE_RESPONSE_H */
+#endif /* REFLEX_CHECKER_H */

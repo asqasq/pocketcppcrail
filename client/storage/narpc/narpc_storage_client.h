@@ -1,4 +1,8 @@
 /*
+ * CppCrail: Native Crail
+ *
+ * Author: Patrick Stuedi  <stu@zurich.ibm.com>
+ *
  * Copyright (C) 2015-2018, IBM Corporation
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +26,6 @@
 
 #include "narpc/rpc_client.h"
 #include "storage/storage_client.h"
-#include "storage/storage_response.h"
 
 class NarpcStorageClient : public RpcClient, public StorageClient {
 public:
@@ -35,10 +38,10 @@ public:
     return RpcClient::Connect(address, port);
   }
   int Close() { return RpcClient::Close(); }
-  shared_ptr<StorageResponse> WriteData(int key, long long address,
-                                        shared_ptr<ByteBuffer> buf);
-  shared_ptr<StorageResponse> ReadData(int key, long long address,
-                                       shared_ptr<ByteBuffer> buf);
+  shared_ptr<Future> WriteData(int key, long long address,
+                               shared_ptr<ByteBuffer> buf);
+  shared_ptr<Future> ReadData(int key, long long address,
+                              shared_ptr<ByteBuffer> buf);
 };
 
 #endif /* NARPC_STORAGE_CLIENT_H */
