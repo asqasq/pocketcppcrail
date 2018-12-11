@@ -1,4 +1,8 @@
 /*
+ * CppCrail: Native Crail
+ *
+ * Author: Patrick Stuedi  <stu@zurich.ibm.com>
+ *
  * Copyright (C) 2015-2018, IBM Corporation
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +26,6 @@
 
 #include "reflex/reflex_client.h"
 #include "storage/storage_client.h"
-#include "storage/storage_response.h"
 
 class ReflexStorageClient : public ReflexClient, public StorageClient {
 public:
@@ -33,10 +36,10 @@ public:
     return ReflexClient::Connect(address, port);
   }
   int Close() { return ReflexClient::Close(); }
-  shared_ptr<StorageResponse> WriteData(int key, long long address,
-                                        shared_ptr<ByteBuffer> buf);
-  shared_ptr<StorageResponse> ReadData(int key, long long address,
-                                       shared_ptr<ByteBuffer> buf);
+  shared_ptr<Future> WriteData(int key, long long address,
+                               shared_ptr<ByteBuffer> buf);
+  shared_ptr<Future> ReadData(int key, long long address,
+                              shared_ptr<ByteBuffer> buf);
 
 private:
   long long linearBlockAddress(long long address, int sector_size);

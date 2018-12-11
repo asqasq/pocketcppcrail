@@ -1,4 +1,8 @@
 /*
+ * CppCrail: Native Crail
+ *
+ * Author: Patrick Stuedi  <stu@zurich.ibm.com>
+ *
  * Copyright (C) 2015-2018, IBM Corporation
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,7 +27,7 @@
 #include <memory>
 
 #include "common/byte_buffer.h"
-#include "storage_response.h"
+#include "common/future.h"
 
 using namespace crail;
 
@@ -31,10 +35,10 @@ class StorageClient {
 public:
   virtual int Connect(int address, int port) = 0;
   virtual int Close() = 0;
-  virtual shared_ptr<StorageResponse> WriteData(int key, long long address,
-                                                shared_ptr<ByteBuffer> buf) = 0;
-  virtual shared_ptr<StorageResponse> ReadData(int key, long long address,
-                                               shared_ptr<ByteBuffer> buf) = 0;
+  virtual shared_ptr<Future> WriteData(int key, long long address,
+                                       shared_ptr<ByteBuffer> buf) = 0;
+  virtual shared_ptr<Future> ReadData(int key, long long address,
+                                      shared_ptr<ByteBuffer> buf) = 0;
 };
 
 #endif /* STORAGE_CLIENT_H */
