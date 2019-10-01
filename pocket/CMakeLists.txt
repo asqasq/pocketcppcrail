@@ -12,8 +12,11 @@ IF(Boost_FOUND)
 	SET(Boost_USE_STATIC_RUNTIME OFF)
 	FIND_PACKAGE(Boost 1.58.0 COMPONENTS python)
 
+  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
+  MESSAGE(STATUS ${PYTHON_LIBRARIES})
+
 	ADD_LIBRARY(pocket SHARED pypocket.cxx pocket_dispatcher.cc)
-	TARGET_LINK_LIBRARIES(pocket ${Boost_LIBRARIES} cppcrail)
+  TARGET_LINK_LIBRARIES(pocket ${Boost_LIBRARIES} cppcrail ${PYTHON_LIBRARIES})
 ELSEIF(NOT Boost_FOUND)
 	MESSAGE(FATAL_ERROR "Unable to find correct Boost version. Did you set BOOST_ROOT?")
 ENDIF()

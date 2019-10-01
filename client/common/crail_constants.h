@@ -31,8 +31,8 @@ using namespace std;
 namespace crail {
 
 const int kDirectoryDepth = 16;
-const int kBlockSize = 65536; //4096;
-//const int kBlockSize = 1048576;
+//const int kBlockSize = 65536; //4096;
+const int kBlockSize = 1048576;
 // const int kBlockSize = 4096;
 //const int kBufferSize = 1048576;
 const int kBufferSize = 524288;
